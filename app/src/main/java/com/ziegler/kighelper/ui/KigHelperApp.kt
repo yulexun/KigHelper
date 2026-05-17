@@ -13,6 +13,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Keyboard
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -44,7 +47,10 @@ import com.ziegler.kighelper.ui.navigation.topLevelDestinations
 import com.ziegler.kighelper.ui.navigation.topLevelRoutes
 import com.ziegler.kighelper.ui.screens.AboutScreen
 import com.ziegler.kighelper.ui.screens.AddEditPhraseScreen
+import com.ziegler.kighelper.ui.screens.EditInfoCardScreen
 import com.ziegler.kighelper.ui.screens.EditScreen
+import com.ziegler.kighelper.ui.screens.InfoCardCollectionScreen
+import com.ziegler.kighelper.ui.screens.SendCardScreen
 import com.ziegler.kighelper.ui.screens.InputScreen
 import com.ziegler.kighelper.ui.screens.MainScreen
 import com.ziegler.kighelper.ui.screens.ToolboxScreen
@@ -59,6 +65,7 @@ fun KigHelperApp(
     windowSize: WindowSizeClass,
     viewModel: AACViewModel,
     voiceViewModel: VoiceViewModel,
+    infoCardViewModel: InfoCardViewModel,
     onSpeak: (String) -> Unit,
     onStop: () -> Unit,
     onPhraseSpoken: (Phrase) -> Unit = {}
@@ -66,20 +73,24 @@ fun KigHelperApp(
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: AppRoutes.MAIN
-    val showNavigation = currentRoute in topLevelRoutes
+    val showNavigation = currentRoute in topLevelRoutes || currentRoute == AppRoutes.INPUT
+    val onTopLevelDestinationClick: (String) -> Unit = { route ->
+        // Prefer popping to an existing top-level destination in back stack.
+        if (!navController.popBackStack(route, inclusive = false)) {
+            navController.navigateToTopLevelDestination(route)
+        }
+    }
 
     val isExpanded = windowSize.widthSizeClass != WindowWidthSizeClass.Compact
     val density = LocalDensity.current
     val isImeVisible = WindowInsets.ime.getBottom(density) > 0
-    val showBottomBar = showNavigation &&
-        !isExpanded &&
-        !(currentRoute == AppRoutes.INPUT && isImeVisible)
+    val showBottomBar = showNavigation && !isExpanded && !isImeVisible
 
     Row(modifier = Modifier.fillMaxSize()) {
         if (showNavigation && isExpanded) {
             AppNavigationRail(
                 currentRoute = currentRoute,
-                onDestinationClick = navController::navigateToTopLevelDestination
+                onDestinationClick = onTopLevelDestinationClick
             )
         }
 
@@ -87,11 +98,23 @@ fun KigHelperApp(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxSize(),
+            floatingActionButton = {
+                if (currentRoute == AppRoutes.MAIN) {
+                    FloatingActionButton(
+                        onClick = { navController.navigate(AppRoutes.INPUT) }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Keyboard,
+                            contentDescription = "输入"
+                        )
+                    }
+                }
+            },
             bottomBar = {
                 AppBottomBar(
                     visible = showBottomBar,
                     currentRoute = currentRoute,
-                    onDestinationClick = navController::navigateToTopLevelDestination
+                    onDestinationClick = onTopLevelDestinationClick
                 )
             }
         ) { innerPadding ->
@@ -150,8 +173,38 @@ fun KigHelperApp(
                 composable(AppRoutes.INPUT) {
                     InputScreen(
                         contentPadding = innerPadding,
+                        onBack = { navController.popBackStack() },
                         onSpeak = onSpeak,
                         onStop = onStop
+                    )
+                }
+
+                composable(AppRoutes.INFO_CARD) {
+                    InfoCardCollectionScreen(
+                        viewModel = infoCardViewModel,
+                        contentPadding = innerPadding,
+                        onNavigateToEdit = {
+                            navController.navigate(AppRoutes.EDIT_INFO_CARD)
+                        },
+                        onNavigateToSend = {
+                            navController.navigate(AppRoutes.SEND_CARD)
+                        }
+                    )
+                }
+
+                composable(AppRoutes.SEND_CARD) {
+                    SendCardScreen(
+                        viewModel = infoCardViewModel,
+                        contentPadding = innerPadding,
+                        onBack = { navController.popBackStack() }
+                    )
+                }
+
+                composable(AppRoutes.EDIT_INFO_CARD) {
+                    EditInfoCardScreen(
+                        viewModel = infoCardViewModel,
+                        contentPadding = innerPadding,
+                        onBack = { navController.popBackStack() }
                     )
                 }
 
@@ -230,7 +283,7 @@ private const val NavTransitionDurationMillis = 300
 
 private val topLevelRouteOrder = listOf(
     AppRoutes.MAIN,
-    AppRoutes.INPUT,
+    AppRoutes.INFO_CARD,
     AppRoutes.EDIT
 )
 
@@ -327,3 +380,4 @@ private fun AppBottomBar(
         }
     }
 }
+

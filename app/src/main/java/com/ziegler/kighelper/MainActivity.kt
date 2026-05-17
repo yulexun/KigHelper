@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -13,11 +14,14 @@ import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSiz
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
-import com.ziegler.kighelper.data.Phrase
+import androidx.core.content.IntentCompat
 import com.ziegler.kighelper.data.SharedPreferencesPhraseRepository
+import com.ziegler.kighelper.data.SharedPreferencesInfoCardRepository
 import com.ziegler.kighelper.data.SharedPreferencesVoiceProfileRepository
 import com.ziegler.kighelper.ui.AACViewModel
 import com.ziegler.kighelper.ui.AACViewModelFactory
+import com.ziegler.kighelper.ui.InfoCardViewModel
+import com.ziegler.kighelper.ui.InfoCardViewModelFactory
 import com.ziegler.kighelper.ui.KigHelperApp
 import com.ziegler.kighelper.ui.VoiceViewModel
 import com.ziegler.kighelper.ui.VoiceViewModelFactory
@@ -26,6 +30,7 @@ import com.ziegler.kighelper.ui.components.UpdateHandler
 import com.ziegler.kighelper.ui.theme.KigHelperTheme
 import com.ziegler.kighelper.utils.NotificationHelper
 import com.ziegler.kighelper.utils.TTSManager
+import com.ziegler.kighelper.utils.InfoCardTransferUtils
 import com.ziegler.kighelper.utils.WindowConfig
 import kotlinx.coroutines.launch
 
@@ -42,11 +47,17 @@ class MainActivity : ComponentActivity() {
     private val voiceProfileRepository by lazy {
         SharedPreferencesVoiceProfileRepository(applicationContext)
     }
+    private val infoCardRepository by lazy {
+        SharedPreferencesInfoCardRepository(applicationContext)
+    }
     private val viewModel: AACViewModel by viewModels {
         AACViewModelFactory(phraseRepository)
     }
     private val voiceViewModel: VoiceViewModel by viewModels {
         VoiceViewModelFactory(voiceProfileRepository)
+    }
+    private val infoCardViewModel: InfoCardViewModel by viewModels {
+        InfoCardViewModelFactory(infoCardRepository)
     }
 
     private val screenReceiver = object : BroadcastReceiver() {
@@ -83,6 +94,7 @@ class MainActivity : ComponentActivity() {
                     windowSize = windowSizeClass,
                     viewModel = viewModel,
                     voiceViewModel = voiceViewModel,
+                    infoCardViewModel = infoCardViewModel,
                     onSpeak = { text -> ttsManager.speak(text, voiceViewModel.activeProfile) },
                     onStop = { ttsManager.stop() },
                     onPhraseSpoken = { phrase ->
@@ -97,6 +109,14 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+
+        handleInboundIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleInboundIntent(intent)
     }
 
     override fun onStart() {
@@ -129,5 +149,25 @@ class MainActivity : ComponentActivity() {
             ContextCompat.RECEIVER_NOT_EXPORTED
         )
         screenReceiverRegistered = true
+    }
+
+    private fun handleInboundIntent(intent: Intent) {
+        when (intent.action) {
+            Intent.ACTION_SEND -> {
+                val stream = IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, android.net.Uri::class.java)
+                if (intent.type == InfoCardTransferUtils.SHARE_MIME_TYPE && stream != null) {
+                    lifecycleScope.launch {
+                        infoCardViewModel.importFromSharePackage(this@MainActivity, stream) { success ->
+                            val message = if (success) {
+                                "已导入收到的信息卡"
+                            } else {
+                                "导入失败，文件可能已损坏"
+                            }
+                            Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+            }
+        }
     }
 }
