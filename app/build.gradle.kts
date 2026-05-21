@@ -15,8 +15,8 @@ android {
         applicationId = "com.ziegler.kighelper"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.1.0"
+        versionCode = 4
+        versionName = "1.1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -75,6 +75,7 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.compose.foundation)
+    implementation(libs.reorderable)
     implementation(libs.androidx.exifinterface)
     implementation(libs.zxing.core)
     implementation(libs.androidx.camera.core)

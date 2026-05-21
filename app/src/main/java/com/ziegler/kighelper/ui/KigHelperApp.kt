@@ -122,8 +122,7 @@ fun KigHelperApp(
                 navController = navController,
                 startDestination = AppRoutes.MAIN,
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp),
+                    .fillMaxSize(),
                 enterTransition = {
                     slideIntoContainer(
                         towards = navSlideDirection(isPop = false),
@@ -152,10 +151,11 @@ fun KigHelperApp(
                 composable(AppRoutes.MAIN) {
                     val context = androidx.compose.ui.platform.LocalContext.current
                     MainScreen(
-                        modifier = Modifier.padding(innerPadding),
+                        contentPadding = innerPadding,
                         phrases = viewModel.phraseList,
                         displayText = viewModel.displayText,
                         isShowingInitialHint = viewModel.isShowingInitialHint,
+                        isPhrasesLoading = viewModel.isPhrasesLoading,
                         onPhraseClick = { phrase ->
                             viewModel.showPhrase(phrase)
                             onSpeak(phrase.speech)
@@ -166,7 +166,8 @@ fun KigHelperApp(
                             viewModel.clearDisplayText()
                             onStop()
                             com.ziegler.kighelper.utils.NotificationHelper.clearPhraseAndRefresh(context)
-                        }
+                        },
+                        onAddPhrase = viewModel::addPhrase
                     )
                 }
 
@@ -235,9 +236,6 @@ fun KigHelperApp(
                         },
                         onNavigateToEdit = { id ->
                             navController.navigate(AppRoutes.addEditRoute(id))
-                        },
-                        onNavigateToAbout = {
-                            navController.navigate(AppRoutes.ABOUT)
                         }
                     )
                 }

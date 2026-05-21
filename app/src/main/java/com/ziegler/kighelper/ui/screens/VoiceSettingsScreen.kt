@@ -10,9 +10,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -41,6 +44,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -50,6 +54,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -72,6 +77,8 @@ import kotlin.math.roundToInt
 fun VoiceSettingsScreen(
     viewModel: VoiceViewModel, onBack: () -> Unit, onPreview: (String) -> Unit
 ) {
+    val navigationBarPadding =
+        WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val context = LocalContext.current
     val profile = viewModel.activeProfile
     val modelManager = remember(context) { OfflineVoiceModelManager(context) }
@@ -91,6 +98,7 @@ fun VoiceSettingsScreen(
         modelStatuses.firstOrNull { it.pack.id == modelManager.normalizeModelId(profile.modelId) }
             ?: modelStatuses.firstOrNull()
     val coroutineScope = rememberCoroutineScope()
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val archiveImportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -157,17 +165,26 @@ fun VoiceSettingsScreen(
     }
 
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        contentWindowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
         topBar = {
-            TopAppBar(title = { Text("全局音色设置") }, navigationIcon = {
+            TopAppBar(
+                title = { Text("全局音色设置") }, navigationIcon = {
                 IconButton(onClick = onBack) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回")
                 }
             }, actions = {
-                IconButton(onClick = {
-                    configImportLauncher.launch(arrayOf("application/json", "text/*", "*/*"))
-                }) {
+                IconButton(
+                    onClick = {
+                        configImportLauncher.launch(
+                            arrayOf(
+                                "application/json", "text/*", "*/*"
+                            )
+                        )
+                    }) {
                     Icon(Icons.Filled.FileOpen, "导入配置")
                 }
+
                 IconButton(
                     onClick = {
                         context.shareVoicePresetFile(
@@ -177,14 +194,15 @@ fun VoiceSettingsScreen(
                     }) {
                     Icon(Icons.Filled.Share, "分享预设")
                 }
-            })
+            }, scrollBehavior = scrollBehavior
+            )
         }) { padding ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(padding), contentPadding = PaddingValues(
+                start = 16.dp, top = 16.dp, end = 16.dp, bottom = 16.dp + navigationBarPadding
+            ), verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item {
                 Text(
@@ -317,6 +335,7 @@ fun VoiceSettingsScreen(
                 }
             }
         }
+
     }
 
     val installAction = pendingInstallAction
@@ -454,6 +473,8 @@ fun VoiceSettingsScreen(
                 }
             })
     }
+
+
 }
 
 @Composable
@@ -519,8 +540,7 @@ private fun OfflineModelStatusCard(
 
             if (installMessage != null) {
                 Text(
-                    text = installMessage,
-                    style = MaterialTheme.typography.bodySmall
+                    text = installMessage, style = MaterialTheme.typography.bodySmall
                 )
             }
         }
