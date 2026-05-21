@@ -3,4 +3,7 @@
     <cache-path
         name="voice_presets"
         path="voice_presets/" />
+    <cache-path
+        name="info_cards"
+        path="info_cards/" />
 </paths>

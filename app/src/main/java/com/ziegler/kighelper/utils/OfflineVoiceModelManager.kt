@@ -86,14 +86,14 @@ class OfflineVoiceModelManager(context: Context) {
         }
     }
 
-    fun registerCustomModel(displayName: String): OfflineVoiceModelStatus {
-        return registerCustomModel(
-            displayName = displayName,
-            format = OfflineVoiceModelFormat.VITS,
-            requiredFiles = vitsBasicRequiredFiles(),
-            speakerCount = 1
-        )
-    }
+//    fun registerCustomModel(displayName: String): OfflineVoiceModelStatus {
+//        return registerCustomModel(
+//            displayName = displayName,
+//            format = OfflineVoiceModelFormat.VITS,
+//            requiredFiles = vitsBasicRequiredFiles(),
+//            speakerCount = 1
+//        )
+//    }
 
     fun registerCustomModel(
         displayName: String,

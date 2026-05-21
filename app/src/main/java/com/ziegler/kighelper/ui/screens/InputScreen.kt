@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,11 +16,14 @@ import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material3.Button
@@ -56,6 +60,7 @@ import com.ziegler.kighelper.ui.utils.rememberPhysicalButtonHaptics
 fun InputScreen(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(0.dp),
+    onBack: () -> Unit,
     onSpeak: (String) -> Unit,
     onStop: () -> Unit
 ) {
@@ -77,6 +82,7 @@ fun InputScreen(
     val navigationEndPadding = with(density) {
         WindowInsets.navigationBars.getRight(this, layoutDirection).toDp()
     }
+    val statusTopPadding = with(density) { WindowInsets.statusBars.getTop(this).toDp() }
     val safeStartPadding = maxOf(
         contentPadding.calculateStartPadding(layoutDirection),
         navigationStartPadding
@@ -85,6 +91,7 @@ fun InputScreen(
         contentPadding.calculateEndPadding(layoutDirection),
         navigationEndPadding
     )
+    val safeTopPadding = maxOf(contentPadding.calculateTopPadding(), statusTopPadding)
     var navigationBottomPadding by remember { mutableStateOf(0.dp) }
     val isImeVisible = imeBottomPadding > 0.dp
 
@@ -172,6 +179,22 @@ fun InputScreen(
                 }
             })
 
+        IconButton(
+            onClick = onBack,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(start = safeStartPadding, top = safeTopPadding + 8.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                    shape = CircleShape
+                )
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "返回"
+            )
+        }
+
         Row(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
@@ -189,7 +212,12 @@ fun InputScreen(
                     onClick = {
                         textFieldValue = TextFieldValue("")
                         onStop()
-                    }) {
+                    },
+                    modifier = Modifier.background(
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                        shape = CircleShape
+                    )
+                ) {
                     Icon(
                         imageVector = Icons.Default.Clear, contentDescription = "清空内容"
                     )
